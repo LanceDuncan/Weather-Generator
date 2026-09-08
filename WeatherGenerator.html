@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Weather Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier', serif;
+      background: #F1E9D2;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #F2F0EF;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #7f8c8d;
+      margin-bottom: 30px;
+      font-style: italic;
+    }
+
+    .config-section {
+      background: #F2F0EF;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #2c3e50;
+    }
+
+    select, input {
+      padding: 8px;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+
+    .note {
+      color: #7f8c8d;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #D47E30;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    .output-section {
+      margin-top: 30px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #7f8c8d;
+    }
+
+    .output-toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .output-toolbar button {
+      background: #3498db;
+      padding: 8px 16px;
+      font-size: 14px;
+      flex: 0 0 auto;
+    }
+
+    .output-toolbar button:hover {
+      background: #2980b9;
+    }
+
+    .output-toolbar button:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .copy-status {
+      align-self: center;
+      color: #27ae60;
+      font-size: 14px;
+    }
+
+    #reportText {
+      width: 100%;
+      min-height: 500px;
+      resize: vertical;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 15px;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+      background: #fff;
+      color: #2c3e50;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⛈️ D&D Weather Generator ⛈️</h1>
+    <p class="subtitle">Modular Climate-Based Weather System</p>
+
+    <div class="config-section">
+      <h2>Configuration</h2>
+
+      <div class="config-grid">
+        <div class="form-group">
+          <label for="climate">Climate</label>
+          <select id="climate">
+            <option value="cfa" selected>Cfa - Humid Subtropical (temperate, no dry season, hot summer)</option>
+            <option value="bwh">BWh - Desert (dry, arid, hot)</option>
+            <!--
+              Remaining Köppen climates — commented out until their data is
+              filled in (see the "Not yet implemented" climates in the
+              climateData object above). To activate one: move its <option>
+              line out of this comment block, and add a matching entry to
+              climateData.
+
+              <option value="af">Af - Rainforest (tropical, rainforest)</option>
+              <option value="am">Am - Tropical Monsoon (tropical, monsoon)</option>
+              <option value="as">As - Savanna (tropical, savanna, dry summer)</option>
+              <option value="aw">Aw - Savanna (tropical, savanna, dry winter)</option>
+              <option value="bsh">BSh - Steppe (dry, semi-arid, hot)</option>
+              <option value="bsk">BSk - Steppe (dry, semi-arid, cold)</option>
+              <option value="bwk">BWk - Desert (dry, arid, cold)</option>
+              <option value="cfb">Cfb - Temperate Oceanic (temperate, no dry season, warm summer)</option>
+              <option value="cfc">Cfc - Subpolar Oceanic (temperate, no dry season, cold summer)</option>
+              <option value="csa">Csa - Mediterranean (temperate, dry summer, hot summer)</option>
+              <option value="csb">Csb - Mediterranean (temperate, dry summer, warm summer)</option>
+              <option value="csc">Csc - Mediterranean (temperate, dry summer, cold summer)</option>
+              <option value="cwa">Cwa - Subtropical Monsoon (temperate, dry winter, hot summer)</option>
+              <option value="cwb">Cwb - Subtropical Highland (temperate, dry winter, warm summer)</option>
+              <option value="cwc">Cwc - Subtropical Highland (temperate, dry winter, cold summer)</option>
+              <option value="dfa">Dfa - Humid Continental (continental, no dry season, hot summer)</option>
+              <option value="dfb">Dfb - Humid Continental (continental, no dry season, warm summer)</option>
+              <option value="dfc">Dfc - Subarctic (continental, no dry season, cold summer)</option>
+              <option value="dfd">Dfd - Subarctic (continental, no dry season, very cold winter)</option>
+              <option value="dsa">Dsa - Mediterranean-influenced Humid Continental (continental, dry summer, hot summer)</option>
+              <option value="dsb">Dsb - Mediterranean-influenced Humid Continental (continental, dry summer, warm summer)</option>
+              <option value="dsc">Dsc - Mediterranean-influenced Subarctic (continental, dry summer, cold summer)</option>
+              <option value="dsd">Dsd - Mediterranean-influenced Subarctic (continental, dry summer, very cold winter)</option>
+              <option value="dwa">Dwa - Humid Continental Monsoon (continental, dry winter, hot summer)</option>
+              <option value="dwb">Dwb - Humid Continental Monsoon (continental, dry winter, warm summer)</option>
+              <option value="dwc">Dwc - Subarctic Monsoon (continental, dry winter, cold summer)</option>
+              <option value="dwd">Dwd - Subarctic Monsoon (continental, dry winter, very cold winter)</option>
+              <option value="ef">EF - Ice Cap (polar, ice cap)</option>
+              <option value="et">ET - Tundra (polar, tundra)</option>
+            -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="month">Month</label>
+          <select id="month">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="hemisphere">Hemisphere</label>
+          <select id="hemisphere">
+            <option value="north" selected>Northern</option>
+            <option value="south">Southern</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="numDays">Number of Days</label>
+          <input type="number" id="numDays" min="1" max="35" value="1">
+        </div>
+
+        <div class="form-group">
+          <label for="windModifier">Wind Strength Modifier</label>
+          <select id="windModifier">
+            <option value="-4">Very Weak (-4)</option>
+            <option value="-3">Weak (-3)</option>
+            <option value="-2">Slightly Weak (-2)</option>
+            <option value="-1">Somewhat Weak (-1)</option>
+            <option value="0" selected>Normal (0)</option>
+            <option value="1">Somewhat Strong (+1)</option>
+            <option value="2">Slightly Strong (+2)</option>
+            <option value="3">Strong (+3)</option>
+            <option value="4">Very Strong (+4)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="dominantWind">Dominant Wind Direction</label>
+          <select id="dominantWind">
+            <option value="none">None (Random)</option>
+            <option value="N">North (N)</option>
+            <option value="NE">Northeast (NE)</option>
+            <option value="E">East (E)</option>
+            <option value="SE">Southeast (SE)</option>
+            <option value="S">South (S)</option>
+            <option value="SW">Southwest (SW)</option>
+            <option value="W">West (W)</option>
+            <option value="NW">Northwest (NW)</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 20px; margin-bottom: 10px;">Starting Conditions</h3>
+      <p class="note">Select "Random" to generate fresh conditions, or set specific values from a previous day.</p>
+
+      <div class="config-grid">
+        <div class="form-group">
+          <label for="startCloud">Cloud Cover</label>
+          <select id="startCloud">
+            <option value="random">Random</option>
+            <option value="Clear">Clear</option>
+            <option value="Partly Cloudy">Partly Cloudy</option>
+            <option value="Cloudy">Cloudy</option>
+            <option value="Overcast">Overcast</option>
+            <option value="Fog">Fog</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="startPrecip">Precipitation</label>
+          <select id="startPrecip">
+            <option value="random">Random</option>
+            <option value="None">None</option>
+            <option value="Sprinkles">Sprinkles</option>
+            <option value="Showers">Showers</option>
+            <option value="Downpour">Downpour</option>
+            <option value="Drizzle">Drizzle</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="startWind">Wind</label>
+          <select id="startWind">
+            <option value="random">Random</option>
+            <option value="Calm">Calm</option>
+            <option value="Faint Breeze">Faint Breeze</option>
+            <option value="Gentle Breeze">Gentle Breeze</option>
+            <option value="Brisk Breeze">Brisk Breeze</option>
+            <option value="Fresh Breeze">Fresh Breeze</option>
+            <option value="Strong Winds">Strong Winds</option>
+            <option value="High Winds">High Winds</option>
+            <option value="Gale Winds">Gale Winds</option>
+            <option value="Storm Winds">Storm Winds</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="startTemp">Temperature</label>
+          <select id="startTemp">
+            <option value="random">Random</option>
+            <option value="Sub-Zero">Sub-Zero</option>
+            <option value="Frigid">Frigid</option>
+            <option value="Cold">Cold</option>
+            <option value="Mild">Mild</option>
+            <option value="Warm">Warm</option>
+            <option value="Hot">Hot</option>
+            <option value="Scorching">Scorching</option>
+          </select>
+        </div>
+      </div>
+
+      <button onclick="generateWeather()" style="margin-top: 20px; width: 100%;">
+        🎲 Generate Weather
+      </button>
+    </div>
+
+    <div id="output" class="output-section">
+      <div class="output-toolbar">
+        <button id="copyBtn" onclick="copyReport()" disabled>📋 Copy to Clipboard</button>
+        <button id="txtBtn" onclick="downloadReport('txt')" disabled>💾 Download .txt</button>
+        <button id="csvBtn" onclick="downloadReport('csv')" disabled>📊 Download .csv</button>
+        <span id="copyStatus" class="copy-status"></span>
+      </div>
+      <textarea id="reportText" readonly placeholder="Ready to generate weather."></textarea>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CLIMATE DATA
+    // Formerly fetched at runtime from climates/<code>.json. That fetch()
+    // call fails under the file:// protocol (the browser blocks local-file
+    // fetch with a CORS error), which is exactly what breaks this app when
+    // someone just double-clicks the HTML file instead of running it through
+    // a local server. Embedding the data inline removes that dependency
+    // entirely so the whole app is one self-contained file.
+    //
+    // Only "cfa" has been built out so far. To add another climate, add a
+    // new entry here (same shape: cloudCoverTables + temperatureTables keyed
+    // by month 1-12) and move its <option> out of the disabled list above.
+    // =========================================================================
+    const climateData = {
+      "cfa": {
+        "cloudCoverTables": {
+          "1": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "2": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "3": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 6, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 7, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "4": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "5": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "6": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 9, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "7": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 9, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "8": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 9, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "9": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 9, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "10": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 5, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 6, "rollMax": 8, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "11": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 5, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 6, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 11, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ],
+          "12": [
+            {"rollMin": 2, "rollMax": 2, "result": "Fog", "cloudMod": 0, "precipMod": 0, "windMod": -8, "duration": "12d6"},
+            {"rollMin": 3, "rollMax": 4, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 5, "rollMax": 7, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 8, "rollMax": 10, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Overcast", "cloudMod": 2, "precipMod": 0, "windMod": 0, "duration": "12d6"}
+          ]
+        },
+        "temperatureTables": {
+          "1": [
+            {"rollMin": 2, "rollMax": 2, "result": "Frigid", "tempMod": -2},
+            {"rollMin": 3, "rollMax": 7, "result": "Cold", "tempMod": -1},
+            {"rollMin": 8, "rollMax": 11, "result": "Mild", "tempMod": 0},
+            {"rollMin": 12, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "2": [
+            {"rollMin": 2, "rollMax": 7, "result": "Cold", "tempMod": -1},
+            {"rollMin": 8, "rollMax": 11, "result": "Mild", "tempMod": 0},
+            {"rollMin": 12, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "3": [
+            {"rollMin": 2, "rollMax": 6, "result": "Cold", "tempMod": -1},
+            {"rollMin": 7, "rollMax": 10, "result": "Mild", "tempMod": 0},
+            {"rollMin": 11, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "4": [
+            {"rollMin": 2, "rollMax": 3, "result": "Cold", "tempMod": -1},
+            {"rollMin": 4, "rollMax": 9, "result": "Mild", "tempMod": 0},
+            {"rollMin": 10, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "5": [
+            {"rollMin": 2, "rollMax": 2, "result": "Cold", "tempMod": -1},
+            {"rollMin": 3, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 11, "result": "Warm", "tempMod": 1},
+            {"rollMin": 12, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "6": [
+            {"rollMin": 2, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "7": [
+            {"rollMin": 2, "rollMax": 5, "result": "Mild", "tempMod": 0},
+            {"rollMin": 6, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "8": [
+            {"rollMin": 2, "rollMax": 5, "result": "Mild", "tempMod": 0},
+            {"rollMin": 6, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "9": [
+            {"rollMin": 2, "rollMax": 2, "result": "Cold", "tempMod": -1},
+            {"rollMin": 3, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "10": [
+            {"rollMin": 2, "rollMax": 3, "result": "Cold", "tempMod": -1},
+            {"rollMin": 4, "rollMax": 9, "result": "Mild", "tempMod": 0},
+            {"rollMin": 10, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "11": [
+            {"rollMin": 2, "rollMax": 7, "result": "Cold", "tempMod": -1},
+            {"rollMin": 8, "rollMax": 10, "result": "Mild", "tempMod": 0},
+            {"rollMin": 11, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ],
+          "12": [
+            {"rollMin": 2, "rollMax": 2, "result": "Frigid", "tempMod": -2},
+            {"rollMin": 3, "rollMax": 7, "result": "Cold", "tempMod": -1},
+            {"rollMin": 8, "rollMax": 11, "result": "Mild", "tempMod": 0},
+            {"rollMin": 12, "rollMax": 12, "result": "Warm", "tempMod": 1}
+          ]
+        }
+      },
+      // Extracted from the blog's "BWh Climate Temperature Lookup Table" and
+      // "BWh Climate Cloud Cover Lookup Table" images (cross-checked against
+      // the BWh sheet in Weather.xlsx, which matches). Fog and Overcast never
+      // occur in this climate (roll ranges never reach them), so those rows
+      // are simply omitted rather than given unreachable ranges.
+      //
+      // One data gap found and fixed: April's official table jumps straight
+      // from Hot topping out at 9 to Scorching starting at 11, leaving roll
+      // 10 with no match (confirmed in both the blog image and the
+      // spreadsheet — a genuine authoring gap, not a misread). Extended Hot
+      // to 8-10 to close it; flagged to the user, easy to change if a
+      // different split was intended.
+      "bwh": {
+        "cloudCoverTables": {
+          "1": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "2": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "3": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "4": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 10, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 11, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "5": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "6": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "7": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "8": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "9": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "10": [
+            {"rollMin": 2, "rollMax": 9, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 10, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "11": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ],
+          "12": [
+            {"rollMin": 2, "rollMax": 8, "result": "Clear", "cloudMod": -1, "precipMod": 0, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 9, "rollMax": 11, "result": "Partly Cloudy", "cloudMod": 0, "precipMod": -4, "windMod": 0, "duration": "12d6"},
+            {"rollMin": 12, "rollMax": 12, "result": "Cloudy", "cloudMod": 1, "precipMod": -2, "windMod": 0, "duration": "12d6"}
+          ]
+        },
+        "temperatureTables": {
+          "1": [
+            {"rollMin": 2, "rollMax": 3, "result": "Cold", "tempMod": -1},
+            {"rollMin": 4, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 10, "result": "Warm", "tempMod": 1},
+            {"rollMin": 11, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "2": [
+            {"rollMin": 2, "rollMax": 3, "result": "Cold", "tempMod": -1},
+            {"rollMin": 4, "rollMax": 7, "result": "Mild", "tempMod": 0},
+            {"rollMin": 8, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "3": [
+            {"rollMin": 2, "rollMax": 2, "result": "Cold", "tempMod": -1},
+            {"rollMin": 3, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 8, "result": "Warm", "tempMod": 1},
+            {"rollMin": 9, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "4": [
+            {"rollMin": 2, "rollMax": 5, "result": "Mild", "tempMod": 0},
+            {"rollMin": 6, "rollMax": 7, "result": "Warm", "tempMod": 1},
+            {"rollMin": 8, "rollMax": 10, "result": "Hot", "tempMod": 2},
+            {"rollMin": 11, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "5": [
+            {"rollMin": 2, "rollMax": 3, "result": "Mild", "tempMod": 0},
+            {"rollMin": 4, "rollMax": 6, "result": "Warm", "tempMod": 1},
+            {"rollMin": 7, "rollMax": 9, "result": "Hot", "tempMod": 2},
+            {"rollMin": 10, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "6": [
+            {"rollMin": 2, "rollMax": 2, "result": "Mild", "tempMod": 0},
+            {"rollMin": 3, "rollMax": 5, "result": "Warm", "tempMod": 1},
+            {"rollMin": 6, "rollMax": 8, "result": "Hot", "tempMod": 2},
+            {"rollMin": 9, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "7": [
+            {"rollMin": 2, "rollMax": 2, "result": "Mild", "tempMod": 0},
+            {"rollMin": 3, "rollMax": 5, "result": "Warm", "tempMod": 1},
+            {"rollMin": 6, "rollMax": 8, "result": "Hot", "tempMod": 2},
+            {"rollMin": 9, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "8": [
+            {"rollMin": 2, "rollMax": 2, "result": "Mild", "tempMod": 0},
+            {"rollMin": 3, "rollMax": 5, "result": "Warm", "tempMod": 1},
+            {"rollMin": 6, "rollMax": 8, "result": "Hot", "tempMod": 2},
+            {"rollMin": 9, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "9": [
+            {"rollMin": 2, "rollMax": 3, "result": "Mild", "tempMod": 0},
+            {"rollMin": 4, "rollMax": 5, "result": "Warm", "tempMod": 1},
+            {"rollMin": 6, "rollMax": 8, "result": "Hot", "tempMod": 2},
+            {"rollMin": 9, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "10": [
+            {"rollMin": 2, "rollMax": 4, "result": "Mild", "tempMod": 0},
+            {"rollMin": 5, "rollMax": 7, "result": "Warm", "tempMod": 1},
+            {"rollMin": 8, "rollMax": 11, "result": "Hot", "tempMod": 2},
+            {"rollMin": 12, "rollMax": 12, "result": "Scorching", "tempMod": 4}
+          ],
+          "11": [
+            {"rollMin": 2, "rollMax": 2, "result": "Cold", "tempMod": -1},
+            {"rollMin": 3, "rollMax": 5, "result": "Mild", "tempMod": 0},
+            {"rollMin": 6, "rollMax": 9, "result": "Warm", "tempMod": 1},
+            {"rollMin": 10, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ],
+          "12": [
+            {"rollMin": 2, "rollMax": 3, "result": "Cold", "tempMod": -1},
+            {"rollMin": 4, "rollMax": 6, "result": "Mild", "tempMod": 0},
+            {"rollMin": 7, "rollMax": 10, "result": "Warm", "tempMod": 1},
+            {"rollMin": 11, "rollMax": 12, "result": "Hot", "tempMod": 2}
+          ]
+        }
+      }
+    };
+
+    // Universal weather data (same for all climates)
+    let weatherData = {
+      "precipitationTable": [
+        {"rollMin": 2, "rollMax": 4, "result": "None", "thunderstormChance": 0, "windMod": 0, "nextCheck": "6d4"},
+        {"rollMin": 5, "rollMax": 5, "result": "Sprinkles", "thunderstormChance": 1, "duration": "1", "windMod": 0},
+        {"rollMin": 6, "rollMax": 8, "result": "Showers", "thunderstormChance": 20, "duration": "1d3", "windMod": 1},
+        {"rollMin": 9, "rollMax": 9, "result": "Downpour", "thunderstormChance": 80, "duration": "3d4", "windMod": 2},
+        {"rollMin": 10, "rollMax": 12, "result": "Drizzle", "thunderstormChance": 5, "duration": "6d4", "windMod": 0}
+      ],
+      "precipTransitionTable": [
+        {"from": "Sprinkles", "rollMin": 1, "rollMax": 1, "toPrecip": "Drizzle", "cloudChange": "Overcast"},
+        {"from": "Sprinkles", "rollMin": 2, "rollMax": 2, "toPrecip": "Downpour", "cloudChange": "+1"},
+        {"from": "Sprinkles", "rollMin": 3, "rollMax": 3, "toPrecip": "Showers", "cloudChange": "0"},
+        {"from": "Sprinkles", "rollMin": 4, "rollMax": 4, "toPrecip": "Sprinkles", "cloudChange": "0"},
+        {"from": "Sprinkles", "rollMin": 5, "rollMax": 5, "toPrecip": "None", "cloudChange": "0"},
+        {"from": "Sprinkles", "rollMin": 6, "rollMax": 6, "toPrecip": "None", "cloudChange": "Clear"},
+
+        {"from": "Showers", "rollMin": 1, "rollMax": 1, "toPrecip": "Drizzle", "cloudChange": "Overcast"},
+        {"from": "Showers", "rollMin": 2, "rollMax": 2, "toPrecip": "Downpour", "cloudChange": "+1"},
+        {"from": "Showers", "rollMin": 3, "rollMax": 3, "toPrecip": "Showers", "cloudChange": "0"},
+        {"from": "Showers", "rollMin": 4, "rollMax": 4, "toPrecip": "Showers", "cloudChange": "0"},
+        {"from": "Showers", "rollMin": 5, "rollMax": 5, "toPrecip": "None", "cloudChange": "Partly Cloudy"},
+        {"from": "Showers", "rollMin": 6, "rollMax": 6, "toPrecip": "None", "cloudChange": "Clear"},
+
+        {"from": "Downpour", "rollMin": 1, "rollMax": 1, "toPrecip": "Drizzle", "cloudChange": "Overcast"},
+        {"from": "Downpour", "rollMin": 2, "rollMax": 2, "toPrecip": "Downpour", "cloudChange": "+1"},
+        {"from": "Downpour", "rollMin": 3, "rollMax": 3, "toPrecip": "Downpour", "cloudChange": "0"},
+        {"from": "Downpour", "rollMin": 4, "rollMax": 4, "toPrecip": "Showers", "cloudChange": "0"},
+        {"from": "Downpour", "rollMin": 5, "rollMax": 5, "toPrecip": "Showers", "cloudChange": "-1"},
+        {"from": "Downpour", "rollMin": 6, "rollMax": 6, "toPrecip": "Sprinkles", "cloudChange": "-1"},
+
+        {"from": "Drizzle", "rollMin": 1, "rollMax": 1, "toPrecip": "Drizzle", "cloudChange": "Overcast"},
+        {"from": "Drizzle", "rollMin": 2, "rollMax": 2, "toPrecip": "Drizzle", "cloudChange": "Overcast"},
+        {"from": "Drizzle", "rollMin": 3, "rollMax": 3, "toPrecip": "Downpour", "cloudChange": "0"},
+        {"from": "Drizzle", "rollMin": 4, "rollMax": 4, "toPrecip": "None", "cloudChange": "Cloudy"},
+        {"from": "Drizzle", "rollMin": 5, "rollMax": 5, "toPrecip": "Showers", "cloudChange": "Partly Cloudy"},
+        {"from": "Drizzle", "rollMin": 6, "rollMax": 6, "toPrecip": "None", "cloudChange": "Partly Cloudy"}
+      ],
+      "windTable": [
+        {"rollMin": 2, "rollMax": 2, "result": "Calm", "windMod": -4, "tempMod": 0},
+        {"rollMin": 3, "rollMax": 3, "result": "Faint Breeze", "windMod": -3, "tempMod": 0},
+        {"rollMin": 4, "rollMax": 4, "result": "Gentle Breeze", "windMod": -2, "tempMod": 0},
+        {"rollMin": 5, "rollMax": 5, "result": "Brisk Breeze", "windMod": -1, "tempMod": -1},
+        {"rollMin": 6, "rollMax": 8, "result": "Fresh Breeze", "windMod": 0, "tempMod": -1},
+        {"rollMin": 9, "rollMax": 9, "result": "Strong Winds", "windMod": 1, "tempMod": -1},
+        {"rollMin": 10, "rollMax": 10, "result": "High Winds", "windMod": 2, "tempMod": -1},
+        {"rollMin": 11, "rollMax": 11, "result": "Gale Winds", "windMod": 3, "tempMod": -2},
+        {"rollMin": 12, "rollMax": 12, "result": "Storm Winds", "windMod": 4, "tempMod": -2}
+      ],
+      "precipTypeTable": [
+        {"tempGrade": "Scorching", "rollMin": 1, "rollMax": 19, "result": "Rain"},
+        {"tempGrade": "Scorching", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Hot", "rollMin": 1, "rollMax": 19, "result": "Rain"},
+        {"tempGrade": "Hot", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Warm", "rollMin": 1, "rollMax": 19, "result": "Rain"},
+        {"tempGrade": "Warm", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Mild", "rollMin": 1, "rollMax": 19, "result": "Rain"},
+        {"tempGrade": "Mild", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Cold", "rollMin": 1, "rollMax": 15, "result": "Rain"},
+        {"tempGrade": "Cold", "rollMin": 16, "rollMax": 17, "result": "Sleet (Wet Snow)"},
+        {"tempGrade": "Cold", "rollMin": 18, "rollMax": 19, "result": "Mix of Rain and Ice Pellets"},
+        {"tempGrade": "Cold", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Frigid", "rollMin": 1, "rollMax": 5, "result": "Freezing Rain"},
+        {"tempGrade": "Frigid", "rollMin": 6, "rollMax": 16, "result": "Snow"},
+        {"tempGrade": "Frigid", "rollMin": 17, "rollMax": 19, "result": "Ice Pellets"},
+        {"tempGrade": "Frigid", "rollMin": 20, "rollMax": 20, "result": "Hail"},
+        {"tempGrade": "Sub-Zero", "rollMin": 1, "rollMax": 16, "result": "Snow"},
+        {"tempGrade": "Sub-Zero", "rollMin": 17, "rollMax": 19, "result": "Ice Pellets"},
+        {"tempGrade": "Sub-Zero", "rollMin": 20, "rollMax": 20, "result": "Hail"}
+      ],
+      "fogTypeTable": [
+        {"rollMin": 1, "rollMax": 1, "result": "Light Fog"},
+        {"rollMin": 2, "rollMax": 2, "result": "Medium Fog"},
+        {"rollMin": 3, "rollMax": 3, "result": "Heavy Fog"},
+        {"rollMin": 4, "rollMax": 4, "result": "Thick Fog"}
+      ],
+      // Climate-specific data, filled in from climateData by loadClimate()
+      "cloudCoverTables": {},
+      "temperatureTables": {}
+    };
+
+    // Load climate-specific data from the embedded climateData object.
+    // (No fetch(), no network/file-system access — works from a plain
+    // double-click, a file:// URL, or any static host.)
+    function loadClimate(climate) {
+      const data = climateData[climate];
+      if (!data) {
+        console.warn(`No data available yet for climate: ${climate}`);
+        return false;
+      }
+      weatherData.cloudCoverTables[climate] = data.cloudCoverTables;
+      weatherData.temperatureTables[climate] = data.temperatureTables;
+      console.log(`Loaded climate: ${climate}`);
+      return true;
+    }
+
+    // Clears the report textarea/buttons back to a placeholder message,
+    // without touching the toolbar's own markup.
+    function resetOutput(message) {
+      const textarea = document.getElementById('reportText');
+      textarea.value = '';
+      textarea.placeholder = message;
+      document.getElementById('copyBtn').disabled = true;
+      document.getElementById('txtBtn').disabled = true;
+      document.getElementById('csvBtn').disabled = true;
+      document.getElementById('copyStatus').textContent = '';
+    }
+
+    // Load default climate on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadClimate(document.getElementById('climate').value);
+    });
+
+    // Reload when climate changes
+    document.getElementById('climate').addEventListener('change', (e) => {
+      const ok = loadClimate(e.target.value);
+      resetOutput(ok ? 'Climate data loaded. Ready to generate weather.' : 'No data for that climate yet.');
+    });
+  </script>
+
+  <script>
+    // Dice Rolling Functions
+    const DiceRoller = {
+      rollDice(n, s) {
+        let t = 0;
+        for (let i = 0; i < n; i++) t += Math.floor(Math.random() * s) + 1;
+        return t;
+      },
+
+      roll2d6(m = 0, targetMod = 0) {
+        const r = this.rollDice(2, 6);
+        const total = Math.max(2, Math.min(12, r + m + targetMod));
+        return {raw: r, modifier: m, targetModifier: targetMod, total};
+      },
+
+      rollDuration(f) {
+        if (f === "special" || f === "0" || f === 0) return 0;
+
+        // Convert to string if it's a number
+        f = String(f);
+
+        // Check if it's just a plain number (e.g., "1", "6", "24")
+        if (/^\d+$/.test(f)) {
+          return parseInt(f);
+        }
+
+        // Parse dice formula like "2d6", "1d6+1", "4d6-2"
+        const m = f.match(/(\d+)d(\d+)([+\-]\d+)?/);
+        if (!m) {
+          console.warn(`Invalid duration formula: ${f}, returning 0`);
+          return 0;
+        }
+
+        let turns = this.rollDice(parseInt(m[1]), parseInt(m[2]));
+        if (m[3]) turns += parseInt(m[3]);
+
+        return turns;
+      },
+
+      findResult(table, roll) {
+        return table.find(e => roll >= e.rollMin && roll <= e.rollMax) || null;
+      },
+
+      rollCloudCover(data, climate, month, mod = 0) {
+        const roll = this.roll2d6(mod);
+        const result = this.findResult(data.cloudCoverTables[climate][month], roll.total);
+        if (!result) return null;
+        const duration = result.duration === "special" ? (result.result === "Fog" ? this.rollDice(1, 4) : 0) : this.rollDuration(result.duration);
+        return {roll, result: result.result, cloudMod: result.cloudMod, precipMod: result.precipMod, windMod: result.windMod, duration, isFog: result.result === "Fog"};
+      },
+
+      rollPrecipitation(data, mod = 0) {
+        const roll = this.roll2d6(mod);
+        const result = this.findResult(data.precipitationTable, roll.total);
+        if (!result) return null;
+
+        const thunder = result.thunderstormChance > 0 && this.rollDice(1, 100) <= result.thunderstormChance;
+
+        // Duration only exists for actual precipitation
+        const duration = result.duration ? this.rollDuration(result.duration) : 0;
+
+        // nextCheck only exists for "None"
+        const nextCheck = result.nextCheck ? this.rollDuration(result.nextCheck) : 0;
+
+        return {
+          roll,
+          result: result.result,
+          thunderstorm: thunder,
+          duration: duration,
+          nextCheck: nextCheck,
+          windMod: result.windMod,
+          isActive: result.result !== "None"
+        };
+      },
+
+      rollPrecipTransition(data, current) {
+        const roll = this.rollDice(1, 6);
+        const entries = data.precipTransitionTable.filter(e => e.from === current);
+        const result = this.findResult(entries, roll);
+        if (!result) return null;
+
+        // Get duration for the new precipitation type if it exists
+        let duration = 0;
+        if (result.toPrecip && result.toPrecip !== "None") {
+          const precipInfo = data.precipitationTable.find(p => p.result === result.toPrecip);
+          if (precipInfo) {
+            duration = this.rollDuration(precipInfo.duration);
+          }
+        }
+
+        return {
+          roll,
+          from: current,
+          toPrecip: result.toPrecip,
+          cloudChange: result.cloudChange,
+          duration
+        };
+      },
+
+      rollWind(data, mod = 0, targetMod = 0) {
+        const roll = this.roll2d6(mod, targetMod);
+        const result = this.findResult(data.windTable, roll.total);
+        if (!result) return null;
+        return {roll, result: result.result, windMod: result.windMod, tempMod: result.tempMod};
+      },
+
+      rollWindDirection(dominant = 'NE', prevModifier = 0) {
+        const baseRoll = this.rollDice(2, 6);
+
+        // Apply previous modifier and wrap around the 2-12 range
+        let adjustedValue = ((baseRoll - 2) + prevModifier) % 11;
+        while (adjustedValue < 0) adjustedValue += 11;
+        while (adjustedValue > 10) adjustedValue -= 11;
+        const adjustedRoll = adjustedValue + 2;
+
+        // Get modifier for this position (-4 to +4)
+        const modifierMap = {2: -4, 3: -3, 4: -2, 5: -1, 6: 0, 7: 0, 8: 0, 9: 1, 10: 2, 11: 3, 12: 4};
+        const newModifier = modifierMap[adjustedRoll];
+
+        // Direction lookup - 8 compass points
+        const compassPoints = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const dominantIndex = compassPoints.indexOf(dominant);
+
+        // Map roll values to positions relative to dominant
+        const rollToOffset = {
+          2: 4, 3: 5, 4: 6, 5: 7,
+          6: 0, 7: 0, 8: 0,
+          9: 1, 10: 2, 11: 3, 12: 4
+        };
+
+        const offset = rollToOffset[adjustedRoll];
+        const directionIndex = (dominantIndex + offset) % 8;
+        const direction = compassPoints[directionIndex];
+
+        return {
+          roll: baseRoll,
+          adjustedRoll: adjustedRoll,
+          prevModifier: prevModifier,
+          newModifier: newModifier,
+          direction: direction
+        };
+      },
+
+      rollTemperature(data, climate, month, mod = 0) {
+        const roll = this.roll2d6(mod);
+        const result = this.findResult(data.temperatureTables[climate][month], roll.total);
+        if (!result) return null;
+        return {roll, result: result.result, tempMod: result.tempMod};
+      },
+
+      rollPrecipType(data, tempGrade) {
+        const roll = this.rollDice(1, 20);
+        const entries = data.precipTypeTable.filter(e => e.tempGrade === tempGrade);
+        const result = this.findResult(entries, roll);
+        return result ? {roll, result: result.result} : null;
+      },
+
+      rollFogType(data) {
+        const roll = this.rollDice(1, 4);
+        const result = this.findResult(data.fogTypeTable, roll);
+        return result ? {roll, result: result.result} : null;
+      },
+
+      adjustTemp(base, windMod) {
+        const order = ["Sub-Zero", "Frigid", "Cold", "Mild", "Warm", "Hot", "Scorching"];
+        const idx = order.indexOf(base);
+        if (idx === -1) return base;
+        return order[Math.max(0, Math.min(order.length - 1, idx + windMod))];
+      }
+    };
+  </script>
+
+  <script>
+    // Weather Generation Engine
+    class WeatherGenerator {
+      constructor(data, dice, windTargetMod = 0, dominantWind = null) {
+        this.data = data;
+        this.dice = dice;
+        this.windTargetMod = windTargetMod;
+        this.dominantWind = dominantWind;
+      }
+
+      generate(config) {
+        const {climate, month, numDays, startingConditions = null} = config;
+        const log = [];
+        let state = this.initState(climate, month, startingConditions);
+
+        // 144 ten-minute turns per day (24 hours * 6 turns)
+        const turnsPerDay = 144;
+
+        // Bug fix: the initial state IS day 1 / turn 0, complete with its
+        // own "Initial conditions" event — but running it through
+        // processTurn() below (which unconditionally resets events to [])
+        // would silently discard that event unless some other check
+        // happened to fire on that exact turn. That used to be masked by
+        // every check logging something regardless of change; now that
+        // checks stay silent unless the weather actually changes, a quiet
+        // first day (e.g. Clear, no precip) rendered with no entries at
+        // all. Record the initial state as-is, then start day 1's
+        // processing loop one turn later so it isn't reprocessed.
+        log.push({...state});
+
+        for (let day = 1; day <= numDays; day++) {
+          const startTurn = day === 1 ? 1 : 0;
+          for (let turn = startTurn; turn < turnsPerDay; turn++) {
+            state = this.processTurn(state, day, turn);
+            log.push({...state});
+          }
+        }
+        return log;
+      }
+
+      initState(climate, month, start) {
+        if (start) return {climate, month, day: 0, turn: 0, ...start};
+        const temp = this.dice.rollTemperature(this.data, climate, month);
+        const cloud = this.dice.rollCloudCover(this.data, climate, month);
+        const wind = this.dice.rollWind(this.data, 0, this.windTargetMod);
+        const dir = this.dice.rollWindDirection(this.dominantWind || 'NE', 0);
+        // Clear skies and Fog never produce precipitation — skip the roll
+        // entirely rather than rolling and discarding it. precipNextCheck
+        // is a placeholder here; checkPrecip() won't count it down while
+        // cloud stays Clear/Fog, and checkClouds() rolls a fresh timer the
+        // moment cloud cover actually develops.
+        const skyIsClearOrFog = cloud.result === 'Clear' || cloud.result === 'Fog';
+        const precip = skyIsClearOrFog
+          ? { result: 'None', isActive: false, duration: 0, nextCheck: 0, windMod: 0, thunderstorm: false }
+          : this.dice.rollPrecipitation(this.data, cloud.precipMod);
+        const fogType = cloud.isFog ? this.dice.rollFogType(this.data) : null;
+
+        // Bug fix: this used to just copy temp.result with no wind applied
+        // at all — every other place in the engine derives tempAdjusted via
+        // adjustTemp(base, windTempMod); the initial roll should too.
+        const tempAdjusted = this.dice.adjustTemp(temp.result, wind.tempMod);
+
+        // Bug fix: if precipitation is active as the very first condition,
+        // it skipped precip-type rolling and the Hail-forces-thunderstorm
+        // rule entirely (both of which startPrecip() applies for every
+        // precip event that starts mid-simulation) — apply them here too.
+        let precipType = null;
+        let thunderstorm = precip.thunderstorm;
+        if (precip.isActive) {
+          const f = this.dice.rollPrecipType(this.data, tempAdjusted);
+          precipType = f.result;
+          thunderstorm = f.result === 'Hail' ? true : precip.thunderstorm;
+        }
+
+        return {
+          climate, month, day: 1, turn: 0,
+          tempBase: temp.result, tempModBase: temp.tempMod,
+          tempAdjusted, tempModWind: wind.tempMod,
+          cloud: cloud.result, cloudMod: cloud.cloudMod,
+          fogType: fogType ? fogType.result : null,
+          cloudDuration: cloud.duration, cloudTurnsRemaining: cloud.duration,
+          cloudLocked: precip.isActive,
+          precip: precip.result, precipMod: cloud.precipMod,
+          precipActive: precip.isActive, precipDuration: precip.duration,
+          precipTurnsRemaining: precip.duration, precipNextCheck: precip.nextCheck,
+          thunderstorm, PrecipType: precipType,
+          wind: wind.result, windMod: wind.windMod,
+          windDirection: dir.direction,
+          windDirectionMod: dir.newModifier,
+          events: ['Initial conditions']
+        };
+      }
+
+      processTurn(prev, day, turn) {
+        const s = {...prev, day, turn, events: []};
+
+        // New day - roll daily weather
+        if (turn === 0 && day > 1) {
+          this.rollDailyWeather(s);
+        }
+
+        this.checkPrecip(s);
+        if (!s.cloudLocked) this.checkClouds(s);
+        return s;
+      }
+
+      rollDailyWeather(s) {
+        // Bug fix: this used to roll temperature BEFORE wind, using
+        // yesterday's stale tempModWind. The blog lists wind strength and
+        // wind direction before daily temperature specifically so
+        // temperature's adjustment reflects "current daily wind strength" —
+        // roll wind first.
+        const wind = this.dice.rollWind(this.data, s.windMod, this.windTargetMod);
+        const oldWind = s.wind;
+        s.wind = wind.result;
+        s.windMod = wind.windMod;
+        // Bug fix: tempModWind was only ever synced inside updateWind()
+        // (precipitation-triggered wind changes) — a plain daily wind
+        // change never updated it, so tempAdjusted could stay locked to a
+        // stale wind modifier from days ago. Sync it every day.
+        s.tempModWind = wind.tempMod;
+        if (wind.result !== oldWind) s.events.push(`Wind: ${oldWind} → ${wind.result}`);
+
+        // Roll wind direction
+        const dir = this.dice.rollWindDirection(this.dominantWind || 'NE', s.windDirectionMod || 0);
+        s.windDirection = dir.direction;
+        s.windDirectionMod = dir.newModifier;
+        s.events.push(`Wind dir: ${dir.direction}`);
+
+        // Roll temperature, then apply today's (just-rolled) wind to get
+        // the adjusted value.
+        const temp = this.dice.rollTemperature(this.data, s.climate, s.month, s.tempModBase);
+        s.tempBase = temp.result;
+        s.tempModBase = temp.tempMod;
+        s.tempAdjusted = this.dice.adjustTemp(temp.result, s.tempModWind);
+        s.events.push(`New day: ${s.tempBase}`);
+
+        // Check for precipitation type
+        // (Bug fix: this used to write s.precipType — lowercase p — which
+        // display code never reads. The rest of the engine uses PrecipType.
+        // It also used tempBase instead of tempAdjusted — the blog rolls
+        // precip type "using the updated temperature".)
+        if (s.precipActive) {
+          const precipType = this.dice.rollPrecipType(this.data, s.tempAdjusted);
+          s.PrecipType = precipType.result;
+          s.events.push(`Precip Type: ${precipType.result}`);
+          // Hail always brings a thunderstorm (never turned back off once set).
+          if (precipType.result === 'Hail' && !s.thunderstorm) {
+            s.thunderstorm = true;
+            s.events.push('⚡ Thunderstorm! (Hail)');
+          }
+        }
+      }
+
+      checkPrecip(s) {
+        if (s.precipActive) {
+          s.precipTurnsRemaining -= 1;
+          if (s.precipTurnsRemaining <= 0) {
+            const trans = this.dice.rollPrecipTransition(this.data, s.precip);
+            this.transitionPrecip(s, trans);
+          }
+        } else {
+          // Clear skies and Fog never produce precipitation. The check
+          // timer is frozen — not even decremented — while cloud stays
+          // Clear/Fog; checkClouds() restarts it fresh the moment cloud
+          // cover actually develops (Partly Cloudy/Cloudy/Overcast).
+          if (s.cloud === 'Clear' || s.cloud === 'Fog') return;
+          s.precipNextCheck -= 1;
+          if (s.precipNextCheck <= 0) {
+            const p = this.dice.rollPrecipitation(this.data, s.precipMod);
+            if (p && p.isActive) this.startPrecip(s, p);
+            else if (p) {
+              // Nothing changed — still no precipitation. Reset the timer
+              // silently; a "checked, nothing happened" line would just be
+              // noise (no state actually changed at this moment).
+              s.precipNextCheck = p.nextCheck;
+            } else {
+              // Table gap (a modified roll landed outside every rollMin/rollMax
+              // band in precipitationTable) — don't crash the generator, just
+              // hold at no-precip and try again shortly. (Logged to console
+              // only — nothing user-visible changed.)
+              console.warn(`Precipitation roll had no matching table entry (mod ${s.precipMod}); defaulting to no precip.`);
+              s.precipNextCheck = 6;
+            }
+          }
+        }
+      }
+
+      transitionPrecip(s, trans) {
+        const oldPrecip = s.precip;
+        const oldCloud = s.cloud;
+
+        // Bug fix: the transition table (and rollPrecipTransition) only ever
+        // produces a `cloudChange` field ("+1"/"-1"/"0" or a specific cloud
+        // name) — there is no `toCloud` field. The old code read
+        // trans.toCloud directly, which was always undefined, so s.cloud
+        // silently broke every time precipitation transitioned or ended.
+        // applyCloudChange() resolves cloudChange against the current cloud
+        // to get the real new cloud value.
+        const newCloud = this.applyCloudChange(oldCloud, trans.cloudChange);
+
+        // Update precipitation
+        s.precip = trans.toPrecip;
+
+        if (trans.toPrecip === "None") {
+          // Precipitation ending
+          s.precipActive = false;
+          s.cloudLocked = false;
+          s.PrecipType = null;
+          s.thunderstorm = false;
+          s.events.push(`${oldPrecip} ends`);
+
+          // Update clouds. The transition table never names "Fog" as a
+          // target, but if the cloud was already Fog and this transition's
+          // cloudChange is "0"/relative (neither of which resolves for a
+          // cloud not in the Clear/Partly Cloudy/Cloudy/Overcast order),
+          // applyCloudChange leaves it as Fog — so only clear fogType when
+          // the cloud has actually changed away from Fog.
+          s.cloud = newCloud;
+          if (newCloud !== 'Fog') s.fogType = null;
+          const cloudInfo = this.findCloudInfo(s, newCloud);
+          if (cloudInfo) {
+            s.cloudDuration = this.dice.rollDuration(cloudInfo.duration);
+            s.cloudTurnsRemaining = s.cloudDuration;
+            s.cloudMod = cloudInfo.cloudMod;
+            s.precipMod = cloudInfo.precipMod;
+            // Only worth a line if the cloud actually differs from what it
+            // was right before precipitation started (cloudChange "0" means
+            // it didn't) — the "<oldPrecip> ends" event already covers the
+            // real change happening at this moment.
+            if (newCloud !== oldCloud) {
+              s.events.push(`Clouds: ${newCloud} ${s.cloudDuration}h`);
+            }
+          }
+
+          // Set next precipitation check — unless the sky cleared up (or,
+          // in principle, fogged in) as a result of this transition, in
+          // which case no check timer applies at all; checkClouds() will
+          // start one fresh once cloud cover actually returns.
+          if (newCloud === 'Clear' || newCloud === 'Fog') {
+            s.precipNextCheck = 0;
+          } else {
+            const p = this.dice.rollPrecipitation(this.data, s.precipMod);
+            s.precipNextCheck = p.nextCheck;
+            s.events.push(`Next check ${p.nextCheck}h`);
+          }
+
+        } else {
+          // Precipitation continuing/changing
+          s.precipActive = true;
+          s.precipDuration = trans.duration;
+          s.precipTurnsRemaining = trans.duration;
+          s.cloudLocked = true;
+          s.cloud = newCloud;
+          if (newCloud !== 'Fog') s.fogType = null;
+
+          if (oldPrecip !== trans.toPrecip) {
+            s.events.push(`${oldPrecip} → ${trans.toPrecip} ${trans.duration}h`);
+
+            // Update wind if precipitation intensity changed
+            const precipInfo = this.data.precipitationTable.find(p => p.result === trans.toPrecip);
+            if (precipInfo && precipInfo.windMod > 0) {
+              this.updateWind(s, precipInfo.windMod);
+            }
+          }
+          // else: precip rolled a fresh duration but landed on the same
+          // type again (e.g. "Showers" continuing as "Showers") — nothing
+          // actually changed, so no line is logged for it.
+
+          if (oldCloud !== newCloud) {
+            s.events.push(`Clouds: ${newCloud}`);
+          }
+        }
+      }
+
+      startPrecip(s, p) {
+        s.precip = p.result;
+        s.precipActive = true;
+        s.precipDuration = p.duration;
+        s.precipTurnsRemaining = p.duration;
+        s.cloudLocked = true;
+        s.events.push(`${p.result} begins (${this.formatDuration(p.duration)})`);
+
+        // Bug fix: this used to roll precip type BEFORE applying the wind
+        // update below, off the stale tempBase. The blog's order is: apply
+        // the precip table's wind modifier, update temperature if that
+        // wind change affects it, THEN roll precipitation state "using the
+        // updated temperature" — so the wind update has to happen first.
+        if (p.windMod > 0) this.updateWind(s, p.windMod);
+
+        // Roll precipitation type (Rain/Hail/Snow/etc.) for every event, at
+        // any temperature — the precipTypeTable gives every tempGrade a
+        // (rare) chance of Hail on a 20, not just the cold ones. (Bug fix:
+        // this used to only roll for Cold/Frigid/Sub-Zero, so Hail could
+        // never occur — and never get checked below — in warmer climates.)
+        const f = this.dice.rollPrecipType(this.data, s.tempAdjusted);
+        s.PrecipType = f.result;
+        s.events.push(`Precip Type: ${f.result}`);
+
+        // Hail always brings a thunderstorm, overriding the normal % roll.
+        s.thunderstorm = f.result === 'Hail' ? true : p.thunderstorm;
+        if (s.thunderstorm) s.events.push('⚡ Thunderstorm!');
+      }
+
+      checkClouds(s) {
+        s.cloudTurnsRemaining -= 1;
+        if (s.cloudTurnsRemaining <= 0) {
+          const wasClearOrFog = s.cloud === 'Clear' || s.cloud === 'Fog';
+          const oldCloud = s.cloud;
+          const oldFogType = s.fogType;
+          const c = this.dice.rollCloudCover(this.data, s.climate, s.month, s.cloudMod);
+          s.cloud = c.result;
+          s.cloudMod = c.cloudMod;
+          s.precipMod = c.precipMod;
+          s.cloudDuration = c.duration;
+          s.cloudTurnsRemaining = c.duration;
+
+          let newFogType = null;
+          if (c.isFog) {
+            const fog = this.dice.rollFogType(this.data);
+            newFogType = fog ? fog.result : null;
+          }
+          s.fogType = newFogType;
+
+          // Only log a "Clouds:" line when the state actually changed. The
+          // duration simply expiring and rerolling the SAME result again
+          // (Clear staying Clear, or even Fog staying the same fog type)
+          // isn't something worth surfacing as a separate entry — it just
+          // implies more is happening than actually is.
+          const changed = c.result !== oldCloud || (c.result === 'Fog' && newFogType !== oldFogType);
+          if (changed) {
+            const label = c.isFog ? `${c.result} - ${newFogType}` : c.result;
+            s.events.push(`Clouds: ${label} (${this.formatDuration(c.duration)})`);
+          }
+
+          // Clear/Fog freeze the precipitation check timer entirely (see
+          // checkPrecip). The moment cloud cover actually develops into
+          // Partly Cloudy/Cloudy/Overcast, restart that timer fresh rather
+          // than resuming whatever stale value it was frozen at.
+          const nowHasCoverage = c.result !== 'Clear' && !c.isFog;
+          if (wasClearOrFog && nowHasCoverage) {
+            s.precipNextCheck = this.dice.rollDuration('6d4');
+            s.events.push(`Precip check timer started (${this.formatDuration(s.precipNextCheck)})`);
+          }
+        }
+      }
+
+      updateWind(s, precipWindMod) {
+        const totalMod = s.windMod + precipWindMod;
+        const w = this.dice.rollWind(this.data, totalMod, this.windTargetMod);
+        const oldW = s.wind, oldTempMod = s.tempModWind;
+        s.wind = w.result;
+        s.windMod = w.windMod;
+        s.tempModWind = w.tempMod;
+        if (oldW !== w.result) s.events.push(`Wind: ${oldW} → ${w.result}`);
+        if (oldTempMod !== w.tempMod) {
+          s.tempAdjusted = this.dice.adjustTemp(s.tempBase, w.tempMod);
+          s.events.push(`Temp adjusted: ${s.tempBase} → ${s.tempAdjusted}`);
+        }
+        const dir = this.dice.rollWindDirection(this.dominantWind || 'NE', s.windDirectionMod || 0);
+        s.windDirection = dir.direction;
+        s.windDirectionMod = dir.newModifier;
+        s.events.push(`Wind dir: ${dir.direction} (rolled ${dir.roll}, adjusted to ${dir.adjustedRoll})`);
+      }
+
+      applyCloudChange(currentCloud, change) {
+        // Specific cloud type
+        if (change === "Clear" || change === "Partly Cloudy" || change === "Cloudy" || change === "Overcast") {
+          return change;
+        }
+
+        // No change
+        if (change === "0") {
+          return currentCloud;
+        }
+
+        // +1 or -1 degree
+        const cloudOrder = ["Clear", "Partly Cloudy", "Cloudy", "Overcast"];
+        const currentIndex = cloudOrder.indexOf(currentCloud);
+
+        if (currentIndex === -1) return currentCloud;
+
+        let newIndex = currentIndex;
+        if (change === "+1") {
+          newIndex = Math.min(currentIndex + 1, 3); // Max Overcast
+        } else if (change === "-1") {
+          newIndex = Math.max(currentIndex - 1, 0); // Min Clear
+        }
+
+        return cloudOrder[newIndex];
+      }
+
+      findCloudInfo(s, result) {
+        return this.data.cloudCoverTables[s.climate][s.month].find(c => c.result === result);
+      }
+
+      formatDuration(turns) {
+        const hours = Math.floor(turns / 6);
+        const mins = (turns % 6) * 10;
+        if (hours > 0 && mins > 0) return `${hours}h ${mins}min`;
+        if (hours > 0) return `${hours}h`;
+        return `${mins}min`;
+      }
+
+      formatTime(turns) {
+        const hour = Math.floor(turns / 6);
+        const minute = (turns % 6) * 10;
+        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      }
+    }
+  </script>
+
+  <script>
+    // Main UI Functions
+
+    function generateWeather() {
+      const climate = document.getElementById('climate').value;
+
+      // All climate/cloud/temperature tables are written from a Northern
+      // Hemisphere perspective (January = winter, July = summer). For the
+      // Southern Hemisphere, seasons are shifted exactly 6 months, so
+      // reuse the same tables by looking up the opposite month instead —
+      // July becomes January, December becomes June, etc. — rather than
+      // needing a second full set of climate data.
+      const selectedMonth = parseInt(document.getElementById('month').value);
+      const hemisphere = document.getElementById('hemisphere').value;
+      const month = hemisphere === 'south' ? ((selectedMonth + 5) % 12) + 1 : selectedMonth;
+
+      const numDays = parseInt(document.getElementById('numDays').value);
+      const windModifier = parseInt(document.getElementById('windModifier').value);
+      // Bug fix: the "None (Random)" option's value is the string "none",
+      // which is truthy — so `dominantWind || 'NE'` downstream never fell
+      // back to random, and the compass lookup got an unknown direction
+      // name (indexOf === -1), producing "Wind ... from undefined".
+      const dominantWindRaw = document.getElementById('dominantWind').value;
+      const dominantWind = dominantWindRaw === 'none' ? null : dominantWindRaw;
+
+      if (!weatherData.cloudCoverTables[climate] || !weatherData.temperatureTables[climate]) {
+        resetOutput('No climate data available for that selection yet.');
+        return;
+      }
+
+      // Check if using starting conditions
+      const cloudStart = document.getElementById('startCloud').value;
+      const precipStart = document.getElementById('startPrecip').value;
+      const windStart = document.getElementById('startWind').value;
+      const tempStart = document.getElementById('startTemp').value;
+
+      let startingConditions = null;
+
+      if (cloudStart !== 'random' || precipStart !== 'random' || windStart !== 'random' || tempStart !== 'random') {
+        const actualCloud = cloudStart === 'random' ? 'Partly Cloudy' : cloudStart;
+        const actualPrecip = precipStart === 'random' ? 'None' : precipStart;
+        const actualWind = windStart === 'random' ? 'Fresh Breeze' : windStart;
+        const actualTemp = tempStart === 'random' ? 'Mild' : tempStart;
+
+        // Look up modifiers from tables
+        const cloudTable = weatherData.cloudCoverTables[climate][month];
+        const cloudEntry = cloudTable ? cloudTable.find(c => c.result === actualCloud) : null;
+        const cloudMod = cloudEntry ? cloudEntry.cloudMod : 0;
+        const precipMod = cloudEntry ? cloudEntry.precipMod : 0;
+
+        const windEntry = weatherData.windTable.find(w => w.result === actualWind);
+        const windMod = windEntry ? windEntry.windMod : 0;
+        const windTempMod = windEntry ? windEntry.tempMod : 0;
+
+        const tempTable = weatherData.temperatureTables[climate][month];
+        const tempEntry = tempTable ? tempTable.find(t => t.result === actualTemp) : null;
+        const tempMod = tempEntry ? tempEntry.tempMod : 0;
+
+        const fogRoll = actualCloud === 'Fog' ? DiceRoller.rollFogType(weatherData) : null;
+
+        startingConditions = {
+          cloud: actualCloud,
+          cloudMod: cloudMod,
+          fogType: fogRoll ? fogRoll.result : null,
+          precip: actualPrecip,
+          precipMod: precipMod,
+          wind: actualWind,
+          windMod: windMod,
+          tempBase: actualTemp,
+          tempModBase: tempMod,
+          tempAdjusted: DiceRoller.adjustTemp(actualTemp, windTempMod),
+          tempModWind: windTempMod,
+          cloudDuration: 1,
+          cloudTurnsRemaining: 1,
+          cloudLocked: actualPrecip !== 'None',
+          precipActive: actualPrecip !== 'None',
+          precipDuration: 1,
+          precipTurnsRemaining: 1,
+          precipNextCheck: 4,
+          thunderstorm: false,
+          PrecipType: null,
+          windDirection: dominantWind || 'N',
+          windDirectionMod: 0,
+          events: []
+        };
+      }
+
+      const generator = new WeatherGenerator(weatherData, DiceRoller, windModifier, dominantWind);
+      const weather = generator.generate({climate, month, numDays, startingConditions});
+
+      displayWeather(weather, numDays);
+    }
+
+    // --- Plain-text / CSV report generation ---------------------------------
+    // The old version rendered each day as styled cards, which look fine but
+    // are painful to select and paste anywhere. Everything below instead
+    // renders into one plain <textarea> (easy to select-all and copy) plus
+    // explicit Copy/Download buttons — .txt for the same plain text, .csv
+    // for dropping straight into a spreadsheet-based calendar.
+
+    function formatTime(turn) {
+      const hour = Math.floor(turn / 6);
+      const minute = (turn % 6) * 10;
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
+    function fieldWind(s) { return `${s.wind} from ${s.windDirection}`; }
+    function fieldTemp(s) { return s.tempAdjusted + (s.tempAdjusted !== s.tempBase ? ` (base: ${s.tempBase})` : ''); }
+    function fieldCloud(s) { return s.cloud + (s.cloud === 'Fog' && s.fogType ? ` (${s.fogType})` : ''); }
+    function fieldPrecip(s) { return s.precip + (s.PrecipType ? ` (${s.PrecipType})` : ''); }
+
+    // Human-readable report: one block per day (its starting Wind/Temp/
+    // Cloud/Precip), followed by an indented, timestamped line for every
+    // later moment where any of those four actually changed. Turns that
+    // changed nothing are already excluded upstream (see checkClouds/
+    // checkPrecip/transitionPrecip) — this only decides what to show for
+    // the turns that ARE flagged as eventful.
+    function buildTextReport(weather, numDays) {
+      const lines = [];
+
+      for (let day = 1; day <= numDays; day++) {
+        const eventfulTurns = weather.filter(w => w.day === day && w.events.length > 0);
+        if (eventfulTurns.length === 0) continue;
+
+        const first = eventfulTurns[0];
+        lines.push(`Day ${day}`);
+        lines.push(`Wind: ${fieldWind(first)}`);
+        lines.push(`Temp: ${fieldTemp(first)}`);
+        lines.push(`Cloud: ${fieldCloud(first)}`);
+        lines.push(`Precip: ${fieldPrecip(first)}`);
+
+        let prev = first;
+        for (let i = 1; i < eventfulTurns.length; i++) {
+          const cur = eventfulTurns[i];
+          const changes = [];
+          if (fieldWind(cur) !== fieldWind(prev)) changes.push(`Wind: ${fieldWind(cur)}`);
+          if (fieldTemp(cur) !== fieldTemp(prev)) changes.push(`Temp: ${fieldTemp(cur)}`);
+          if (fieldCloud(cur) !== fieldCloud(prev)) changes.push(`Cloud: ${fieldCloud(cur)}`);
+          if (fieldPrecip(cur) !== fieldPrecip(prev)) changes.push(`Precip: ${fieldPrecip(cur)}`);
+          if (changes.length > 0) {
+            lines.push(`  ${formatTime(cur.turn)}  ${changes.join('   ')}`);
+          }
+          prev = cur;
+        }
+
+        lines.push('');
+      }
+
+      return lines.join('\n').trim() + '\n';
+    }
+
+    // Spreadsheet-friendly report: one row per eventful turn, every column
+    // filled in (not just what changed) so each row stands on its own when
+    // dropped into a calendar — no need to scroll up to see what the
+    // temperature was.
+    function csvEscape(value) {
+      const v = String(value);
+      return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }
+
+    // One row per DAY (not per timestamp) — a fixed set of columns holding
+    // the day's starting conditions plus a semicolon-separated list of
+    // later changes per category. A "one more column per change" layout
+    // was considered, but a spreadsheet needs a fixed column count to stay
+    // sortable/filterable — day 1 might have 3 changes and day 5 might
+    // have 20, and columns that don't mean the same thing on every row
+    // defeat most of what a spreadsheet is good for. This keeps every
+    // day's whole story in that day's row without the ragged columns.
+    function buildCsvReport(weather, numDays) {
+      const rows = [['Day', 'Wind', 'Temp', 'Cloud', 'Precip', 'Cloud Changes', 'Precip Changes', 'Wind/Temp Changes', 'Thunderstorm']];
+
+      for (let day = 1; day <= numDays; day++) {
+        const eventfulTurns = weather.filter(w => w.day === day && w.events.length > 0);
+        if (eventfulTurns.length === 0) continue;
+
+        const first = eventfulTurns[0];
+        const cloudChanges = [];
+        const precipChanges = [];
+        const windTempChanges = [];
+        let thunderstorm = first.thunderstorm;
+
+        let prev = first;
+        for (let i = 1; i < eventfulTurns.length; i++) {
+          const cur = eventfulTurns[i];
+          const time = formatTime(cur.turn);
+          if (fieldCloud(cur) !== fieldCloud(prev)) cloudChanges.push(`${time} ${fieldCloud(cur)}`);
+          if (fieldPrecip(cur) !== fieldPrecip(prev)) precipChanges.push(`${time} ${fieldPrecip(cur)}`);
+          const windChanged = fieldWind(cur) !== fieldWind(prev);
+          const tempChanged = fieldTemp(cur) !== fieldTemp(prev);
+          if (windChanged || tempChanged) {
+            const parts = [];
+            if (windChanged) parts.push(fieldWind(cur));
+            if (tempChanged) parts.push(fieldTemp(cur));
+            windTempChanges.push(`${time} ${parts.join(', ')}`);
+          }
+          if (cur.thunderstorm) thunderstorm = true;
+          prev = cur;
+        }
+
+        rows.push([
+          day,
+          fieldWind(first),
+          fieldTemp(first),
+          fieldCloud(first),
+          fieldPrecip(first),
+          cloudChanges.join('; '),
+          precipChanges.join('; '),
+          windTempChanges.join('; '),
+          thunderstorm ? 'Yes' : 'No'
+        ]);
+      }
+
+      return rows.map(r => r.map(csvEscape).join(',')).join('\r\n') + '\r\n';
+    }
+
+    let lastWeather = null;
+    let lastNumDays = 0;
+
+    function displayWeather(weather, numDays) {
+      lastWeather = weather;
+      lastNumDays = numDays;
+
+      document.getElementById('reportText').value = buildTextReport(weather, numDays);
+      document.getElementById('copyBtn').disabled = false;
+      document.getElementById('txtBtn').disabled = false;
+      document.getElementById('csvBtn').disabled = false;
+      document.getElementById('copyStatus').textContent = '';
+    }
+
+    function copyReport() {
+      const text = document.getElementById('reportText').value;
+      const status = document.getElementById('copyStatus');
+      const showCopied = () => {
+        status.textContent = '✓ Copied!';
+        setTimeout(() => { status.textContent = ''; }, 2000);
+      };
+      // navigator.clipboard needs a secure context, which some browsers
+      // don't consider a plain file:// page to be — fall back to the
+      // older select+execCommand approach if it's unavailable or fails.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showCopied, () => copyViaTextarea(text, showCopied));
+      } else {
+        copyViaTextarea(text, showCopied);
+      }
+    }
+
+    function copyViaTextarea(text, onSuccess) {
+      const el = document.getElementById('reportText');
+      el.focus();
+      el.select();
+      try {
+        if (document.execCommand('copy')) onSuccess();
+      } catch (err) {
+        console.warn('Copy to clipboard failed:', err);
+      }
+    }
+
+    // Triggers a browser save-file prompt for a Blob — works fine from a
+    // plain file:// page, no server involved.
+    function downloadReport(kind) {
+      if (!lastWeather) return;
+      const isCsv = kind === 'csv';
+      const content = isCsv ? buildCsvReport(lastWeather, lastNumDays) : buildTextReport(lastWeather, lastNumDays);
+      const mime = isCsv ? 'text/csv' : 'text/plain';
+      const filename = `weather-report.${kind}`;
+
+      const blob = new Blob([content], {type: `${mime};charset=utf-8`});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
